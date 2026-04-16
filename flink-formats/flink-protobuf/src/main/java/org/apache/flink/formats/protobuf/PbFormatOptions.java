@@ -55,4 +55,15 @@ public class PbFormatOptions {
                     .withDescription(
                             "When serializing to protobuf data, this is the optional config to specify the string literal in protobuf's array/map in case of null values."
                                     + "By default empty string is used.");
+
+    public static final ConfigOption<Boolean> CONFLUENT_ENABLED =
+            ConfigOptions.key("confluent-enabled")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Optional flag to enable Confluent Schema Registry wire format compatibility. "
+                                    + "When true, a 5-byte prefix (1 magic byte 0x00 + 4-byte schema ID) followed by "
+                                    + "message indexes is prepended on serialization and stripped on deserialization. "
+                                    + "This is required when consuming from or producing to Kafka topics managed by "
+                                    + "Confluent Schema Registry using the Protobuf serializer. Default is false (plain protobuf binary).");
 }

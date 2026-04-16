@@ -21,6 +21,7 @@ package org.apache.flink.formats.protobuf;
 import java.io.Serializable;
 import java.util.Objects;
 
+import static org.apache.flink.formats.protobuf.PbFormatOptions.CONFLUENT_ENABLED;
 import static org.apache.flink.formats.protobuf.PbFormatOptions.IGNORE_PARSE_ERRORS;
 import static org.apache.flink.formats.protobuf.PbFormatOptions.READ_DEFAULT_VALUES;
 import static org.apache.flink.formats.protobuf.PbFormatOptions.WRITE_NULL_STRING_LITERAL;
@@ -33,16 +34,32 @@ public class PbFormatConfig implements Serializable {
     private final boolean ignoreParseErrors;
     private final boolean readDefaultValues;
     private final String writeNullStringLiterals;
+    private final boolean confluentEnabled;
 
     public PbFormatConfig(
             String messageClassName,
             boolean ignoreParseErrors,
             boolean readDefaultValues,
             String writeNullStringLiterals) {
+        this(
+                messageClassName,
+                ignoreParseErrors,
+                readDefaultValues,
+                writeNullStringLiterals,
+                false);
+    }
+
+    public PbFormatConfig(
+            String messageClassName,
+            boolean ignoreParseErrors,
+            boolean readDefaultValues,
+            String writeNullStringLiterals,
+            boolean confluentEnabled) {
         this.messageClassName = messageClassName;
         this.ignoreParseErrors = ignoreParseErrors;
         this.readDefaultValues = readDefaultValues;
         this.writeNullStringLiterals = writeNullStringLiterals;
+        this.confluentEnabled = confluentEnabled;
     }
 
     public String getMessageClassName() {
@@ -61,6 +78,10 @@ public class PbFormatConfig implements Serializable {
         return writeNullStringLiterals;
     }
 
+    public boolean isConfluentEnabled() {
+        return confluentEnabled;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -72,6 +93,7 @@ public class PbFormatConfig implements Serializable {
         PbFormatConfig that = (PbFormatConfig) o;
         return ignoreParseErrors == that.ignoreParseErrors
                 && readDefaultValues == that.readDefaultValues
+                && confluentEnabled == that.confluentEnabled
                 && Objects.equals(messageClassName, that.messageClassName)
                 && Objects.equals(writeNullStringLiterals, that.writeNullStringLiterals);
     }
@@ -79,7 +101,11 @@ public class PbFormatConfig implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(
-                messageClassName, ignoreParseErrors, readDefaultValues, writeNullStringLiterals);
+                messageClassName,
+                ignoreParseErrors,
+                readDefaultValues,
+                writeNullStringLiterals,
+                confluentEnabled);
     }
 
     /** Builder of PbFormatConfig. */
@@ -88,6 +114,7 @@ public class PbFormatConfig implements Serializable {
         private boolean ignoreParseErrors = IGNORE_PARSE_ERRORS.defaultValue();
         private boolean readDefaultValues = READ_DEFAULT_VALUES.defaultValue();
         private String writeNullStringLiterals = WRITE_NULL_STRING_LITERAL.defaultValue();
+        private boolean confluentEnabled = CONFLUENT_ENABLED.defaultValue();
 
         public PbFormatConfigBuilder messageClassName(String messageClassName) {
             this.messageClassName = messageClassName;
@@ -109,12 +136,18 @@ public class PbFormatConfig implements Serializable {
             return this;
         }
 
+        public PbFormatConfigBuilder confluentEnabled(boolean confluentEnabled) {
+            this.confluentEnabled = confluentEnabled;
+            return this;
+        }
+
         public PbFormatConfig build() {
             return new PbFormatConfig(
                     messageClassName,
                     ignoreParseErrors,
                     readDefaultValues,
-                    writeNullStringLiterals);
+                    writeNullStringLiterals,
+                    confluentEnabled);
         }
     }
 }

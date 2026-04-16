@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.formats.protobuf.PbFormatConfig;
+import org.apache.flink.formats.protobuf.util.ConfluentPbUtils;
 import org.apache.flink.formats.protobuf.util.PbFormatUtils;
 import org.apache.flink.formats.protobuf.util.PbSchemaValidationUtils;
 import org.apache.flink.table.data.RowData;
@@ -68,7 +69,11 @@ public class PbRowDataDeserializationSchema implements DeserializationSchema<Row
     @Override
     public RowData deserialize(byte[] message) throws IOException {
         try {
-            return protoToRowConverter.convertProtoBinaryToRow(message);
+            byte[] payload =
+                    formatConfig.isConfluentEnabled()
+                            ? ConfluentPbUtils.stripConfluentHeader(message)
+                            : message;
+            return protoToRowConverter.convertProtoBinaryToRow(payload);
         } catch (Throwable t) {
             if (formatConfig.isIgnoreParseErrors()) {
                 return null;
