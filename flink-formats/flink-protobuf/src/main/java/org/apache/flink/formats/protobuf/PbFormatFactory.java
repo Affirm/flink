@@ -70,7 +70,7 @@ public class PbFormatFactory implements DeserializationFormatFactory, Serializat
                 .ifPresent(configBuilder::writeNullStringLiterals);
         formatOptions
                 .getOptional(PbFormatOptions.CONFLUENT_ENABLED)
-                .ifPresent(configBuilder::confluentEnabled);
+                .ifPresent(configBuilder::confluentMode);
         return configBuilder.build();
     }
 

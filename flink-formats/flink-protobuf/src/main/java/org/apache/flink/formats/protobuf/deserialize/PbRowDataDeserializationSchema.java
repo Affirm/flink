@@ -69,10 +69,22 @@ public class PbRowDataDeserializationSchema implements DeserializationSchema<Row
     @Override
     public RowData deserialize(byte[] message) throws IOException {
         try {
-            byte[] payload =
-                    formatConfig.isConfluentEnabled()
-                            ? ConfluentPbUtils.stripConfluentHeader(message)
-                            : message;
+            byte[] payload;
+            switch (formatConfig.getConfluentMode()) {
+                case TRUE:
+                    payload = ConfluentPbUtils.stripConfluentHeader(message);
+                    break;
+                case AUTO:
+                    payload =
+                            (message.length > 0
+                                            && message[0] == ConfluentPbUtils.CONFLUENT_MAGIC_BYTE)
+                                    ? ConfluentPbUtils.stripConfluentHeader(message)
+                                    : message;
+                    break;
+                case FALSE:
+                default:
+                    payload = message;
+            }
             return protoToRowConverter.convertProtoBinaryToRow(payload);
         } catch (Throwable t) {
             if (formatConfig.isIgnoreParseErrors()) {

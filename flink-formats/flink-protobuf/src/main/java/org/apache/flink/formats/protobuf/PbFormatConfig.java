@@ -18,6 +18,8 @@
 
 package org.apache.flink.formats.protobuf;
 
+import org.apache.flink.formats.protobuf.PbFormatOptions.ConfluentMode;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -34,7 +36,7 @@ public class PbFormatConfig implements Serializable {
     private final boolean ignoreParseErrors;
     private final boolean readDefaultValues;
     private final String writeNullStringLiterals;
-    private final boolean confluentEnabled;
+    private final ConfluentMode confluentMode;
 
     public PbFormatConfig(
             String messageClassName,
@@ -46,7 +48,7 @@ public class PbFormatConfig implements Serializable {
                 ignoreParseErrors,
                 readDefaultValues,
                 writeNullStringLiterals,
-                false);
+                ConfluentMode.FALSE);
     }
 
     public PbFormatConfig(
@@ -54,12 +56,12 @@ public class PbFormatConfig implements Serializable {
             boolean ignoreParseErrors,
             boolean readDefaultValues,
             String writeNullStringLiterals,
-            boolean confluentEnabled) {
+            ConfluentMode confluentMode) {
         this.messageClassName = messageClassName;
         this.ignoreParseErrors = ignoreParseErrors;
         this.readDefaultValues = readDefaultValues;
         this.writeNullStringLiterals = writeNullStringLiterals;
-        this.confluentEnabled = confluentEnabled;
+        this.confluentMode = confluentMode;
     }
 
     public String getMessageClassName() {
@@ -78,8 +80,8 @@ public class PbFormatConfig implements Serializable {
         return writeNullStringLiterals;
     }
 
-    public boolean isConfluentEnabled() {
-        return confluentEnabled;
+    public ConfluentMode getConfluentMode() {
+        return confluentMode;
     }
 
     @Override
@@ -93,7 +95,7 @@ public class PbFormatConfig implements Serializable {
         PbFormatConfig that = (PbFormatConfig) o;
         return ignoreParseErrors == that.ignoreParseErrors
                 && readDefaultValues == that.readDefaultValues
-                && confluentEnabled == that.confluentEnabled
+                && confluentMode == that.confluentMode
                 && Objects.equals(messageClassName, that.messageClassName)
                 && Objects.equals(writeNullStringLiterals, that.writeNullStringLiterals);
     }
@@ -105,7 +107,7 @@ public class PbFormatConfig implements Serializable {
                 ignoreParseErrors,
                 readDefaultValues,
                 writeNullStringLiterals,
-                confluentEnabled);
+                confluentMode);
     }
 
     /** Builder of PbFormatConfig. */
@@ -114,7 +116,7 @@ public class PbFormatConfig implements Serializable {
         private boolean ignoreParseErrors = IGNORE_PARSE_ERRORS.defaultValue();
         private boolean readDefaultValues = READ_DEFAULT_VALUES.defaultValue();
         private String writeNullStringLiterals = WRITE_NULL_STRING_LITERAL.defaultValue();
-        private boolean confluentEnabled = CONFLUENT_ENABLED.defaultValue();
+        private ConfluentMode confluentMode = CONFLUENT_ENABLED.defaultValue();
 
         public PbFormatConfigBuilder messageClassName(String messageClassName) {
             this.messageClassName = messageClassName;
@@ -136,8 +138,8 @@ public class PbFormatConfig implements Serializable {
             return this;
         }
 
-        public PbFormatConfigBuilder confluentEnabled(boolean confluentEnabled) {
-            this.confluentEnabled = confluentEnabled;
+        public PbFormatConfigBuilder confluentMode(ConfluentMode confluentMode) {
+            this.confluentMode = confluentMode;
             return this;
         }
 
@@ -147,7 +149,7 @@ public class PbFormatConfig implements Serializable {
                     ignoreParseErrors,
                     readDefaultValues,
                     writeNullStringLiterals,
-                    confluentEnabled);
+                    confluentMode);
         }
     }
 }

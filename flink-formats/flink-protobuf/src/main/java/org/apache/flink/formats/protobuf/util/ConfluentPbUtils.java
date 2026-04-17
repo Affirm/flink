@@ -57,10 +57,12 @@ public class ConfluentPbUtils {
      * @throws IOException if the magic byte is invalid or the array is too short
      */
     public static byte[] stripConfluentHeader(byte[] bytes) throws IOException {
-        if (bytes == null || bytes.length < FIXED_HEADER_SIZE) {
+        // Minimum valid length: FIXED_HEADER_SIZE (5) + at least 1 byte for the message-index
+        // varint.
+        if (bytes == null || bytes.length < FIXED_HEADER_SIZE + 1) {
             throw new IOException(
                     "Confluent-encoded message is too short: expected at least "
-                            + FIXED_HEADER_SIZE
+                            + (FIXED_HEADER_SIZE + 1)
                             + " bytes, got "
                             + (bytes == null ? "null" : bytes.length));
         }

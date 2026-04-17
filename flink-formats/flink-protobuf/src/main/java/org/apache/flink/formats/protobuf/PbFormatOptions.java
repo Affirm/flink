@@ -23,6 +23,23 @@ import org.apache.flink.configuration.ConfigOptions;
 
 /** This class holds configuration constants used by protobuf format. */
 public class PbFormatOptions {
+
+    /**
+     * Controls Confluent Schema Registry wire-format handling.
+     *
+     * <ul>
+     *   <li>{@code TRUE}: always strip/prepend the Confluent header.
+     *   <li>{@code FALSE}: plain protobuf binary (default).
+     *   <li>{@code AUTO}: on deserialize, strip the header iff {@code bytes[0] == 0x00}; on
+     *       serialize, behaves like {@code FALSE}.
+     * </ul>
+     */
+    public enum ConfluentMode {
+        TRUE,
+        FALSE,
+        AUTO
+    }
+
     public static final ConfigOption<String> MESSAGE_CLASS_NAME =
             ConfigOptions.key("message-class-name")
                     .stringType()
@@ -56,14 +73,15 @@ public class PbFormatOptions {
                             "When serializing to protobuf data, this is the optional config to specify the string literal in protobuf's array/map in case of null values."
                                     + "By default empty string is used.");
 
-    public static final ConfigOption<Boolean> CONFLUENT_ENABLED =
+    public static final ConfigOption<ConfluentMode> CONFLUENT_ENABLED =
             ConfigOptions.key("confluent-enabled")
-                    .booleanType()
-                    .defaultValue(false)
+                    .enumType(ConfluentMode.class)
+                    .defaultValue(ConfluentMode.FALSE)
                     .withDescription(
-                            "Optional flag to enable Confluent Schema Registry wire format compatibility. "
-                                    + "When true, a 5-byte prefix (1 magic byte 0x00 + 4-byte schema ID) followed by "
-                                    + "message indexes is prepended on serialization and stripped on deserialization. "
-                                    + "This is required when consuming from or producing to Kafka topics managed by "
-                                    + "Confluent Schema Registry using the Protobuf serializer. Default is false (plain protobuf binary).");
+                            "Controls Confluent Schema Registry wire-format handling. "
+                                    + "TRUE: always strip/prepend the 5+ byte Confluent header. "
+                                    + "FALSE (default): plain protobuf binary, no header. "
+                                    + "AUTO: on deserialize, strip the header iff the first byte is 0x00 "
+                                    + "(Confluent magic byte) — safe because a valid non-empty protobuf "
+                                    + "message can never start with 0x00; on serialize, behaves like FALSE.");
 }

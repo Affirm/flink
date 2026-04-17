@@ -18,6 +18,7 @@
 
 package org.apache.flink.formats.protobuf;
 
+import org.apache.flink.formats.protobuf.PbFormatOptions.ConfluentMode;
 import org.apache.flink.formats.protobuf.deserialize.PbRowDataDeserializationSchema;
 import org.apache.flink.formats.protobuf.serialize.PbRowDataSerializationSchema;
 import org.apache.flink.formats.protobuf.testproto.SimpleTestMulti;
@@ -37,6 +38,7 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -136,7 +138,12 @@ public class ConfluentPbFormatTest {
 
     private static PbFormatConfig confluentConfig() {
         return new PbFormatConfig(
-                SimpleTestMulti.class.getName(), false, false, "", /* confluentEnabled= */ true);
+                SimpleTestMulti.class.getName(), false, false, "", ConfluentMode.TRUE);
+    }
+
+    private static PbFormatConfig autoConfig() {
+        return new PbFormatConfig(
+                SimpleTestMulti.class.getName(), false, false, "", ConfluentMode.AUTO);
     }
 
     private static RowType rowType() {
@@ -250,7 +257,7 @@ public class ConfluentPbFormatTest {
                         /* ignoreParseErrors= */ true,
                         false,
                         "",
-                        /* confluentEnabled= */ true);
+                        ConfluentMode.TRUE);
 
         byte[] invalid = new byte[] {0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x01};
         PbRowDataDeserializationSchema deser =
@@ -258,7 +265,7 @@ public class ConfluentPbFormatTest {
         deser.open(null);
         // Should return null instead of throwing
         RowData row = deser.deserialize(invalid);
-        assertEquals(null, row);
+        assertNull(row);
     }
 
     @Test
@@ -271,5 +278,81 @@ public class ConfluentPbFormatTest {
         assertNotNull(row);
         assertEquals(55, row.getInt(0));
         assertEquals(77L, row.getLong(1));
+    }
+
+    // -------------------------------------------------------------------------
+    // AUTO mode tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testAutoModeDeserializesConfluentFramedMessage() throws Exception {
+        RowType rt = rowType();
+        PbFormatConfig cfg = autoConfig();
+
+        SimpleTestMulti msg = SimpleTestMulti.newBuilder().setA(11).setB(22L).build();
+        byte[] withHeader = ConfluentPbUtils.addConfluentHeader(msg.toByteArray(), TEST_SCHEMA_ID);
+
+        PbRowDataDeserializationSchema deser =
+                new PbRowDataDeserializationSchema(rt, InternalTypeInfo.of(rt), cfg);
+        deser.open(null);
+        RowData row = deser.deserialize(withHeader);
+
+        assertNotNull(row);
+        assertEquals(11, row.getInt(0));
+        assertEquals(22L, row.getLong(1));
+    }
+
+    @Test
+    public void testAutoModeDeserializesPlainProtobuf() throws Exception {
+        RowType rt = rowType();
+        PbFormatConfig cfg = autoConfig();
+
+        SimpleTestMulti msg = SimpleTestMulti.newBuilder().setA(33).setB(44L).build();
+        byte[] rawProto = msg.toByteArray();
+
+        PbRowDataDeserializationSchema deser =
+                new PbRowDataDeserializationSchema(rt, InternalTypeInfo.of(rt), cfg);
+        deser.open(null);
+        RowData row = deser.deserialize(rawProto);
+
+        assertNotNull(row);
+        assertEquals(33, row.getInt(0));
+        assertEquals(44L, row.getLong(1));
+    }
+
+    @Test
+    public void testAutoModeSerializeDoesNotAddHeader() throws Exception {
+        RowType rt = rowType();
+        PbFormatConfig cfg = autoConfig();
+
+        SimpleTestMulti msg = SimpleTestMulti.newBuilder().setA(5).build();
+        byte[] rawProto = msg.toByteArray();
+
+        PbRowDataSerializationSchema ser = new PbRowDataSerializationSchema(rt, cfg);
+        ser.open(null);
+        RowData row = ProtobufTestHelper.pbBytesToRow(SimpleTestMulti.class, rawProto);
+        row = ProtobufTestHelper.validateRow(row, rt);
+        byte[] serialized = ser.serialize(row);
+
+        // AUTO on serialize must not prepend a Confluent header
+        assertTrue(
+                "AUTO mode serialize must not start with magic byte 0x00",
+                serialized.length == 0 || serialized[0] != ConfluentPbUtils.CONFLUENT_MAGIC_BYTE);
+        // And it must still be valid protobuf
+        SimpleTestMulti decoded = SimpleTestMulti.parseFrom(serialized);
+        assertEquals(5, decoded.getA());
+    }
+
+    @Test
+    public void testAutoModeEmptyMessageTakesPlainPath() throws Exception {
+        RowType rt = rowType();
+        PbFormatConfig cfg = autoConfig();
+
+        PbRowDataDeserializationSchema deser =
+                new PbRowDataDeserializationSchema(rt, InternalTypeInfo.of(rt), cfg);
+        deser.open(null);
+        // Empty byte array: no first byte to inspect, falls through to plain proto path
+        RowData row = deser.deserialize(new byte[0]);
+        assertNotNull(row);
     }
 }
