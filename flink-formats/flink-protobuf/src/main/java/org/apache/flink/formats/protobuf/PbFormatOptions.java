@@ -76,12 +76,12 @@ public class PbFormatOptions {
     public static final ConfigOption<ConfluentMode> CONFLUENT_ENABLED =
             ConfigOptions.key("confluent-enabled")
                     .enumType(ConfluentMode.class)
-                    .defaultValue(ConfluentMode.FALSE)
+                    .defaultValue(ConfluentMode.AUTO)
                     .withDescription(
                             "Controls Confluent Schema Registry wire-format handling. "
                                     + "TRUE: always strip/prepend the 5+ byte Confluent header. "
-                                    + "FALSE (default): plain protobuf binary, no header. "
-                                    + "AUTO: on deserialize, strip the header iff the first byte is 0x00 "
+                                    + "FALSE: plain protobuf binary, no header. "
+                                    + "AUTO (default): on deserialize, strip the header iff the first byte is 0x00 "
                                     + "(Confluent magic byte) — safe because a valid non-empty protobuf "
                                     + "message can never start with 0x00; on serialize, behaves like FALSE.");
 }

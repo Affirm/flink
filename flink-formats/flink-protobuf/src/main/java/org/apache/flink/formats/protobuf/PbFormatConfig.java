@@ -48,7 +48,7 @@ public class PbFormatConfig implements Serializable {
                 ignoreParseErrors,
                 readDefaultValues,
                 writeNullStringLiterals,
-                ConfluentMode.FALSE);
+                ConfluentMode.AUTO);
     }
 
     public PbFormatConfig(

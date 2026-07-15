@@ -130,14 +130,20 @@ public class ConfluentPbUtils {
      * the index values.
      */
     static int skipMessageIndexes(byte[] bytes, int offset) throws IOException {
+        // Confluent encodes message indexes as zigzag-signed varints.
         long[] countResult = readVarint(bytes, offset);
-        long count = countResult[0];
+        long count = zigzagDecode(countResult[0]);
         offset = (int) countResult[1];
         for (long i = 0; i < count; i++) {
             long[] indexResult = readVarint(bytes, offset);
             offset = (int) indexResult[1];
         }
         return offset;
+    }
+
+    /** Zigzag-decodes a value encoded as {@code (n << 1) ^ (n >> 63)}. */
+    static long zigzagDecode(long n) {
+        return (n >>> 1) ^ -(n & 1);
     }
 
     /**
