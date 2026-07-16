@@ -21,6 +21,8 @@ package org.apache.flink.formats.protobuf.serialize;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.formats.protobuf.PbFormatConfig;
+import org.apache.flink.formats.protobuf.PbFormatOptions.ConfluentMode;
+import org.apache.flink.formats.protobuf.util.ConfluentPbUtils;
 import org.apache.flink.formats.protobuf.util.PbFormatUtils;
 import org.apache.flink.formats.protobuf.util.PbSchemaValidationUtils;
 import org.apache.flink.table.data.RowData;
@@ -64,7 +66,11 @@ public class PbRowDataSerializationSchema implements SerializationSchema<RowData
     @Override
     public byte[] serialize(RowData element) {
         try {
-            return rowToProtoConverter.convertRowToProtoBinary(element);
+            byte[] protoBytes = rowToProtoConverter.convertRowToProtoBinary(element);
+            // AUTO on the write path behaves like FALSE: callers must opt into TRUE explicitly.
+            return pbFormatConfig.getConfluentMode() == ConfluentMode.TRUE
+                    ? ConfluentPbUtils.addConfluentHeader(protoBytes)
+                    : protoBytes;
         } catch (Exception e) {
             throw new FlinkRuntimeException(e);
         }
